@@ -1,0 +1,64 @@
+apiVersion : apps/v1                 # версия api k8s для приложений
+kind: Deployment                     # вид создаваемого ресурса 
+metadata:                            # задаем методату
+  name  : test_depl                  # имя деплоймента
+  labels:                            # задаем лейблы
+   app  : test_depl                  # даем лейбл для деплоймента
+spec:                                # спецификация (описываем нужные объекты для деплоймента)
+  selector:                          # описываем нужные для работы поды
+   matchLabels:                      # нужные поды должны (метчиться) быть
+     project  : mindbox              # с указаными лейблами
+
+  template:                          # создаем нужные поды
+   metadata:
+     labels:
+      project : mindbox              # нужный лейбл метчит поды и деплоймент
+
+   spec:                             # cпецефикация для контейнера
+    containers:
+     - name : webbox                 # имя
+       image: testimage              # необходимый образ
+       ports:                        # порт для контейнера
+        - containerPort: 80          
+
+
+---
+apiVersion: autoscaling/v2                # версия для горизонтального скалирования
+kind      : HorizontalPodAutoscaler       # его вид
+metadata  :
+  name: autoscaling
+spec:
+  scaleTargetRef:                         # указываем нужный для скалирования деплоймент
+   apiVersion: apps/v1
+   kind      : Deployment
+   name      : autoscaling
+  minReplicas: 2                          # минимальное кол-во реплик 
+  maxReplicas: 4                          # максимальное кол-во реплик (указано в тз)
+  metrics:
+   - type: Resource                       # указываем ресурсы скалирования
+     resource: 
+      name: cpu
+      targetAverageUtilization: 0.7       # приемлимое значение цпу
+   - type:
+     resource:
+      name: memory
+      targetAverageUtilization: 130       # приемлемое значение для памяти
+
+---
+apiVersion: v1                            # создаем loadbalancer для распределения трафика
+kind      : Service
+metadata  : 
+  name  : loadbalancer
+  labels: 
+    owner: KalininDmitriy
+spec:
+  selector:
+    project: mindbox                     # лейбл проекта
+  type: LoadBalancer 
+  ports:
+    - name      : listener
+      protocol  : TCP
+      port      : 80
+      targetPort: 80
+ 
+      
